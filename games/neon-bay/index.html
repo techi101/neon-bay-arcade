@@ -150,6 +150,27 @@ html,body{height:100%;overflow:hidden;background:#07091c;color:var(--ink);font-f
   </div>
 </div>
 
+<div id="crash"></div>
+<script>
+// Surface any runtime error on screen instead of failing to a black canvas.
+(function () {
+  function show(msg) {
+    var c = document.getElementById("crash");
+    if (!c) return;
+    c.style.cssText = "position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;" +
+      "align-items:center;justify-content:center;gap:14px;padding:32px;text-align:center;" +
+      "background:#0b0518;color:#ffd9e6;font-family:monospace;font-size:13px;line-height:1.7";
+    c.innerHTML = '<div style="font-size:20px;color:#ff2d78">Something broke</div>' +
+      '<div style="max-width:60ch;color:#b9c6e6">' + String(msg).replace(/[<>&]/g, "") + "</div>" +
+      '<div style="color:#6b7ba6">Try a hard refresh (Ctrl+Shift+R). If it persists, open an issue with this text.</div>';
+  }
+  addEventListener("error", function (e) { show(e.message || e); });
+  addEventListener("unhandledrejection", function (e) { show(e.reason || e); });
+  addEventListener("load", function () {
+    if (typeof THREE === "undefined") show("three.js failed to load — check your network or any script blocker.");
+  });
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="game.js"></script>
 </body>

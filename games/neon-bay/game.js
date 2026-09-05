@@ -449,7 +449,10 @@
   }
 
   function spawnPeds() {
-    var g = new THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.28, 0.9, 3, 6)
+    // NOTE: CapsuleGeometry only exists in three.js r140+. Guard the reference
+    // itself, not `new ...` — `new undefined` throws before any ternary runs.
+    var g = (typeof THREE.CapsuleGeometry === "function")
+      ? new THREE.CapsuleGeometry(0.28, 0.9, 3, 6)
       : new THREE.CylinderGeometry(0.28, 0.28, 1.5, 6);
     var m = new THREE.MeshStandardMaterial({ color: 0xcfd2e0, roughness: 0.9 });
     var inst = new THREE.InstancedMesh(g, m, PED_N);
