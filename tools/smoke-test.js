@@ -107,6 +107,7 @@ const documentStub = {
 // ------------------------------------------------------------ sandbox
 let rafQueue = [];
 let frameCount = 0;
+let vnow = 0;                 // virtual milliseconds, advanced one frame at a time
 
 const sandbox = {
   console,
@@ -114,7 +115,10 @@ const sandbox = {
   navigator: { userAgent: "node-smoke-test", maxTouchPoints: 0 },
   location: { href: "http://localhost/", protocol: "http:" },
   innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1,
-  performance: { now: () => Date.now() },
+  // Virtual clock. Frames run back-to-back in microseconds of real time, so a
+  // real clock hands the game dt~0 and nothing in it ever moves. Advancing this
+  // by hand is what makes behavioural assertions meaningful.
+  performance: { now: () => vnow },
   requestAnimationFrame(fn) { rafQueue.push(fn); return rafQueue.length; },
   cancelAnimationFrame() {},
   setTimeout, clearTimeout, setInterval, clearInterval,
@@ -198,17 +202,71 @@ sandbox.globalThis = sandbox;
     fails.push("skipped boot and frame stepping - the file did not evaluate");
   }
 
-  // 5. step frames
-  const STEPS = 240;
-  try {
-    for (let i = 0; i < STEPS; i++) {
+  // helpers for driving the game from outside
+  function step(n) {
+    for (let i = 0; i < n; i++) {
       const q = rafQueue; rafQueue = [];
-      if (!q.length) { fails.push("render loop stopped at frame " + i); break; }
-      q.forEach((fn) => fn(16.7 * i));
+      if (!q.length) throw new Error("render loop stopped after " + frameCount + " frames");
+      vnow += 16.7;
+      q.forEach((fn) => fn(vnow));
       frameCount++;
     }
+  }
+  const fire = (type, ev) => (winH[type] || []).forEach((f) => f(Object.assign({ preventDefault() {} }, ev)));
+  // First number in the element, so "12 / 120" reads as the magazine, not 12120.
+  const num = (id) => {
+    const m = String((store[id] || {}).textContent).match(/-?\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : 0;
+  };
+
+  // 5. step frames
+  const STEPS = 200;
+  try {
+    step(STEPS);
     console.log("ok    stepped " + frameCount + " frames");
   } catch (e) { fail("frame " + frameCount, e); }
+
+  // 5b. the player must actually be able to MOVE.
+  //     A spawn point inside a building blocks every direction and the game
+  //     looks completely dead while throwing no error at all.
+  try {
+    fire("keydown", { key: "w" });
+    step(70);
+    const movedFoot = num("speed");
+    fire("keyup", { key: "w" });
+    step(5);
+    if (movedFoot <= 0) fails.push("holding W on foot produced no speed - player is probably spawned inside geometry");
+    else console.log("ok    on-foot movement responds to input (speed " + movedFoot.toFixed(0) + ")");
+  } catch (e) { fail("movement test", e); }
+
+  // 5c. entering a vehicle and driving must move too
+  try {
+    fire("keydown", { key: "f" }); fire("keyup", { key: "f" });
+    step(10);
+    fire("keydown", { key: "w" });
+    step(90);
+    const movedCar = num("speed");
+    fire("keyup", { key: "w" });
+    step(5);
+    // A car must clearly outrun walking. Comparing against >0 lets a silent
+    // "no vehicle nearby" fall through and re-measure the player on foot.
+    if (movedCar < 20) {
+      fails.push("speed after entering a vehicle was only " + movedCar.toFixed(0) +
+        " - that is walking pace, so F did not actually put the player in a car");
+    } else console.log("ok    vehicle entry + driving respond (speed " + movedCar.toFixed(0) + ")");
+  } catch (e) { fail("driving test", e); }
+
+  // 5d. firing must consume a round
+  try {
+    const before = num("ammo");
+    fire("mousedown", { button: 0 });
+    step(12);
+    fire("mouseup", { button: 0 });
+    step(4);
+    const after = num("ammo");
+    if (!(after < before)) fails.push("firing did not consume ammo (" + before + " -> " + after + ")");
+    else console.log("ok    firing consumes ammo (" + before + " -> " + after + ")");
+  } catch (e) { fail("fire test", e); }
 
   // 6. sanity-check the HUD is producing real numbers
   const bad = [];

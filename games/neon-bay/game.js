@@ -961,6 +961,30 @@
   })();
 
   // ============================================================ player
+  // Buildings are always inset inside a cell, so the road lines at exact
+  // multiples of CELL are guaranteed clear. Spawning at a cell CENTRE
+  // (CELL*0.5) puts you inside a building with no way to walk out.
+  function freeSpot() {
+    for (var t = 0; t < 80; t++) {
+      var gi = t === 0 ? 1 : irnd(0, GRID);
+      var gj = t === 0 ? 1 : irnd(0, GRID);
+      var x = gi * CELL, z = gj * CELL;
+      if (!blockedAt(x, 1, z)) return { x: x, z: z };
+    }
+    return { x: CELL, z: CELL };
+  }
+
+  // Safety net: if anything ever leaves the player embedded in geometry,
+  // slide them out to the nearer of the two road lines bounding this cell.
+  function unstick() {
+    if (!blockedAt(P.x, P.y + 1, P.z)) return;
+    var rx = Math.round(P.x / CELL) * CELL;
+    var rz = Math.round(P.z / CELL) * CELL;
+    if (Math.abs(P.x - rx) <= Math.abs(P.z - rz)) P.x = rx; else P.z = rz;
+    if (blockedAt(P.x, P.y + 1, P.z)) { var s = freeSpot(); P.x = s.x; P.z = s.z; }
+    P.vx = P.vz = 0;
+  }
+
   function nearestCar(maxD) {
     var best = null, bd = maxD * maxD;
     for (var i = 0; i < cars.length; i++) {
@@ -1011,6 +1035,9 @@
     P.vx = lerp(P.vx, wx, clamp(FOOT.accel * dt, 0, 1));
     P.vz = lerp(P.vz, wz, clamp(FOOT.accel * dt, 0, 1));
 
+    unstick();
+
+    // Axis-separated so sliding along a wall still works instead of stopping dead.
     var nx = P.x + P.vx * dt, nz = P.z + P.vz * dt;
     if (!blockedAt(nx, P.y + 1, P.z)) P.x = nx; else P.vx = 0;
     if (!blockedAt(P.x, P.y + 1, nz)) P.z = nz; else P.vz = 0;
@@ -1398,6 +1425,18 @@
     mini = document.getElementById("mini");
     mini.width = mini.height = 190;
     mctx = mini.getContext("2d");
+
+    var spawn = freeSpot();
+    P.x = spawn.x; P.z = spawn.z; P.y = 0;
+    playerMesh.position.set(P.x, 0, P.z);
+
+    // A parked car within reach of the spawn, so pressing F always does
+    // something. Not part of the traffic pool, so it stays put until taken.
+    var park = { x: spawn.x + 4.5, z: spawn.z + 3, h: 0, occupied: false, parked: true,
+                 mesh: buildCarMesh(0xe8355a, false) };
+    park.mesh.position.set(park.x, 0, park.z);
+    scene.add(park.mesh);
+    cars.push(park);
 
     camera.position.set(P.x, 8, P.z - 14);
     running = true;
