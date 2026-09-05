@@ -352,20 +352,58 @@
     return g;
   }
 
-  // A blocky humanoid: torso, head, two arms, two legs, plus a held weapon.
-  function buildPerson(shirt, pants, withGun) {
+  var SKINS = [0xf2cfa8, 0xdcab80, 0xc08552, 0x9c6644, 0x7a4c30, 0x5c3720];
+  var HAIRS = [0x241a14, 0x3d2b1f, 0x0d0b0a, 0x6b4a2a, 0x8a7a5a, 0x4a2418];
+
+  // A blocky humanoid: torso, head with a real face, arms, legs, held weapon.
+  // The face sits on local +z, which is the direction the model walks and aims.
+  function buildPerson(shirt, pants, withGun, skinCol, hairCol) {
     var g = new THREE.Group();
     var sm = new THREE.MeshStandardMaterial({ color: shirt, roughness: 0.85 });
     var pm = new THREE.MeshStandardMaterial({ color: pants, roughness: 0.9 });
-    var skin = new THREE.MeshStandardMaterial({ color: 0xc99a72, roughness: 0.9 });
+    var skin = new THREE.MeshStandardMaterial({
+      color: skinCol === undefined ? SKINS[irnd(0, SKINS.length - 1)] : skinCol, roughness: 0.9
+    });
+    var hairM = new THREE.MeshStandardMaterial({
+      color: hairCol === undefined ? HAIRS[irnd(0, HAIRS.length - 1)] : hairCol, roughness: 1
+    });
+    var dark = new THREE.MeshStandardMaterial({ color: 0x1a1410, roughness: 0.7 });
+    var white = new THREE.MeshStandardMaterial({ color: 0xf6f2ea, roughness: 0.5 });
 
     var torso = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.78, 0.34), sm);
     torso.position.y = 1.22; g.add(torso);
+
+    // collar, so the head reads as attached rather than floating
+    var neck = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.2), skin);
+    neck.position.y = 1.63; g.add(neck);
+
     var head = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.36, 0.32), skin);
     head.position.y = 1.79; g.add(head);
-    var hair = new THREE.Mesh(new THREE.BoxGeometry(0.37, 0.12, 0.35),
-      new THREE.MeshStandardMaterial({ color: 0x241a14, roughness: 1 }));
-    hair.position.y = 1.96; g.add(hair);
+
+    function part(w, h, d, x, y, z, mat) {
+      var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      m.position.set(x, y, z);
+      g.add(m);
+      return m;
+    }
+
+    // eyes: sclera set into the face, pupil proud of it so it catches light
+    [-0.079, 0.079].forEach(function (ox) {
+      part(0.088, 0.062, 0.02, ox, 1.845, 0.162, white);
+      part(0.042, 0.042, 0.026, ox, 1.842, 0.170, dark);
+      part(0.100, 0.024, 0.02, ox, 1.898, 0.162, hairM);   // brow
+    });
+
+    part(0.056, 0.10, 0.06, 0, 1.788, 0.176, skin);         // nose
+    part(0.124, 0.026, 0.02, 0, 1.706, 0.164, dark);        // mouth
+    part(0.03, 0.14, 0.16, -0.176, 1.79, 0, skin);          // ears
+    part(0.03, 0.14, 0.16, 0.176, 1.79, 0, skin);
+
+    // hair: cap plus a back panel and short sides
+    part(0.37, 0.11, 0.35, 0, 1.965, 0, hairM);
+    part(0.36, 0.26, 0.06, 0, 1.86, -0.155, hairM);
+    part(0.04, 0.22, 0.30, -0.172, 1.87, -0.02, hairM);
+    part(0.04, 0.22, 0.30, 0.172, 1.87, -0.02, hairM);
 
     var armG = new THREE.BoxGeometry(0.17, 0.68, 0.19);
     var la = new THREE.Mesh(armG, sm); la.position.set(-0.4, 1.2, 0); g.add(la);
@@ -1173,14 +1211,19 @@
       lx = P.x + Math.sin(P.yaw) * 8; ly = P.y + 1.6; lz = P.z + Math.cos(P.yaw) * 8;
       camera.fov = lerp(camera.fov, 62 + clamp(sp / CAR.maxFwd, 0, 1) * 16, 3 * dt);
     } else {
+      // Hold V to swing the camera round in front of him and look at his face.
+      P.front = lerp(P.front || 0, keys["v"] ? 1 : 0, clamp(7 * dt, 0, 1));
+      var fv = P.front;
       var cp = Math.cos(P.pitch);
-      tx = P.x - Math.sin(P.yaw) * 5.2 * cp - Math.cos(P.yaw) * 1.5;
-      tz = P.z - Math.cos(P.yaw) * 5.2 * cp + Math.sin(P.yaw) * 1.5;
-      ty = P.y + 2.5 - Math.sin(P.pitch) * 4.4;
-      lx = P.x + Math.sin(P.yaw) * 14 * cp;
-      ly = P.y + 1.6 + Math.sin(P.pitch) * 14;
-      lz = P.z + Math.cos(P.yaw) * 14 * cp;
-      camera.fov = lerp(camera.fov, mouse.down ? 54 : 64, 6 * dt);
+      var cy = P.yaw + fv * Math.PI;
+      var back = lerp(5.2, 3.0, fv);
+      tx = P.x - Math.sin(cy) * back * cp - Math.cos(cy) * 1.5 * (1 - fv);
+      tz = P.z - Math.cos(cy) * back * cp + Math.sin(cy) * 1.5 * (1 - fv);
+      ty = P.y + lerp(2.5 - Math.sin(P.pitch) * 4.4, 1.86, fv);
+      lx = lerp(P.x + Math.sin(P.yaw) * 14 * cp, P.x, fv);
+      ly = lerp(P.y + 1.6 + Math.sin(P.pitch) * 14, P.y + 1.80, fv);
+      lz = lerp(P.z + Math.cos(P.yaw) * 14 * cp, P.z, fv);
+      camera.fov = lerp(camera.fov, fv > 0.5 ? 40 : (mouse.down ? 54 : 64), 6 * dt);
     }
     camera.position.x = lerp(camera.position.x, tx, k);
     camera.position.y = lerp(camera.position.y, ty, k);
