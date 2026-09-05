@@ -8,25 +8,43 @@ Original browser games that run with no install, no plugins and no downloads. Ev
 
 ## Neon Bay
 
-An open-world driving game in a procedurally generated grid city at dusk.
+An open-world action game in a procedurally generated grid city at dusk. Drive it, walk it, shoot your way through a six-mission campaign — or ignore the campaign and tear up the city.
 
-- **Procedural city** — ~400 buildings across a 13×13 street grid, generated fresh at load time from code. Window patterns, neon crowns, palm trees and jump ramps are all placed procedurally.
-- **Arcade drift physics** — forward and lateral velocity are tracked separately, so the car understeers under power and breaks loose on the handbrake. Steering authority falls off at top speed.
-- **Delivery missions** — pick up cargo at the gold marker, get it to the green marker before the timer expires. Payout scales with time remaining and your delivery streak.
-- **Police + wanted level** — hitting traffic raises heat. Cross a threshold and marked units spawn off-screen and pursue you. Heat decays when you break line of sight.
-- **Ramps and air** — wedge ramps across the map with real airborne physics and a pitch that follows your arc.
-- **Live minimap** — rotating, player-centred, showing the street grid, your objective, traffic and pursuing units.
-- **Synthesized audio** — engine note, siren and impacts are generated with Web Audio oscillators and noise buffers. Engine pitch tracks actual wheel speed. No audio files.
+### On foot and behind the wheel
+
+- **Seamless state machine** — press `F` to enter or leave any vehicle on the street. Traffic cars are all enterable; the one you take is removed from the AI pool and handed to you.
+- **Third-person shooter controls on foot** — pointer-lock mouse aim, over-shoulder camera, sprint, walk-cycle animation.
+- **Arcade drift driving** — forward and lateral velocity are tracked separately, so the car understeers under power and breaks loose on the handbrake. Steering authority falls off at top speed.
+- **Ramps and air** — wedge ramps with real airborne physics and a pitch that follows your arc.
+
+### Combat
+
+- **Three weapons** — pistol, SMG, shotgun, each with its own damage, fire rate, magazine, spread and pellet count. `1` `2` `3` or `Q` to switch, `R` to reload.
+- **Hitscan with real occlusion** — shots march a ray through the world, so buildings block them. Enemies are hit on a capsule test, walls throw sparks.
+- **Enemy AI** — crews hold a firing distance, strafe, break line of sight around corners, and only shoot when they actually have a shot on you.
+- **Health and armour** — armour soaks 70% of incoming damage until it is gone. Pickups respawn around the map.
+
+### The city responds
+
+- **Wanted level** — heat rises when you shoot, wreck traffic or kill. Police spawn off-screen, pursue, and start firing on you at two stars and above. Heat decays when you break away.
+- **Civilians** — pedestrians wander the sidewalks and scatter when you drive at them or the sirens start.
+- **Live minimap** — rotating and player-centred, showing the street grid, your objective, enemies, police and pickups.
+
+### The campaign
+
+Six missions with an original story — a courier working for a dispatcher named Reyes, and the crew running the north dock. Delivery runs, a timed run while wanted, camp clears, and a final assault with a boss that takes considerably more than one magazine.
 
 ### Controls
 
-| Action | Keyboard | Touch |
+| Action | Keyboard / mouse | Touch |
 |---|---|---|
-| Accelerate / reverse | `W` `S` or `↑` `↓` | GAS / REV |
-| Steer | `A` `D` or `←` `→` | ◀ ▶ |
-| Handbrake | `Space` | HAND |
-| Camera | `C` | — |
-| Respawn | `R` | — |
+| Move / drive | `W` `A` `S` `D` or arrows | ◀ ▶ GAS REV |
+| Aim | Mouse (click to lock) | — |
+| Fire | Left click | FIRE |
+| Enter / exit vehicle | `F` | CAR |
+| Sprint / handbrake | `Shift` / `Space` | RUN |
+| Switch weapon | `1` `2` `3` or `Q` | — |
+| Reload | `R` | — |
 | Pause | `P` | — |
 
 Touch controls appear automatically on touch devices.
@@ -35,7 +53,7 @@ Touch controls appear automatically on touch devices.
 
 ## Running it locally
 
-No build step and no dependencies to install. Serve the folder over HTTP — opening `index.html` directly off the filesystem works in most browsers, but a server is more reliable:
+No build step and no dependencies to install:
 
 ```bash
 git clone https://github.com/techi101/neon-bay-arcade.git
@@ -45,14 +63,31 @@ npx serve .
 
 Then open the address it prints.
 
+## Testing
+
+The game renders with WebGL, which a CI box does not have — so the test harness stubs the renderer and runs everything else for real:
+
+```bash
+node tools/smoke-test.js
+```
+
+It loads the **actual** three.js build the game loads in production, mocks the browser APIs the game touches, boots the game, and steps 240 frames. It checks that:
+
+- every `THREE.*` constructor the source names actually exists in that revision (feature-tested references behind `typeof` are exempt)
+- the file evaluates, boots, and keeps requesting frames
+- no exception escapes during 240 frames of simulation
+- the HUD is producing finite numbers rather than `NaN`
+
+This exists because a `THREE.CapsuleGeometry` reference — a constructor added years after the pinned revision — shipped and blanked the canvas on start. The harness catches that entire class of bug before it reaches a browser.
+
 ## How it is built
 
 | | |
 |---|---|
 | Renderer | [three.js](https://threejs.org/) r128, loaded from a CDN |
-| Geometry | Generated at runtime; buildings, palms and pedestrians use `InstancedMesh` to stay at a low draw-call count |
+| Geometry | Generated at runtime; buildings, palms and stripes use `InstancedMesh` to keep draw calls low |
 | Textures | Drawn into `<canvas>` at load — window grids, sky gradient, asphalt noise |
-| Audio | Web Audio API oscillators, filters and noise buffers |
+| Audio | Web Audio oscillators, filters and noise buffers — engine, siren, gunfire, impacts |
 | Build step | None. Static HTML, CSS and JS |
 
 ```
@@ -61,7 +96,9 @@ neon-bay-arcade/
 ├── games/
 │   └── neon-bay/
 │       ├── index.html      HUD, intro, touch controls
-│       └── game.js         engine: world, physics, AI, missions, audio
+│       └── game.js         world, player, combat, AI, campaign, audio
+├── tools/
+│   └── smoke-test.js       headless boot-and-run test
 ├── LICENSE
 └── README.md
 ```
@@ -74,9 +111,10 @@ The repo is a static site, so GitHub Pages serves it as-is:
 
 ## Roadmap
 
-- [ ] **Street Sprint** — top-down checkpoint time trial with a ghost of your best lap
-- [ ] Persistent high scores via `localStorage`
+- [ ] Cover system and aim-down-sights
 - [ ] Selectable vehicles with distinct handling
+- [ ] Persistent progress via `localStorage`
+- [ ] **Street Sprint** — top-down checkpoint time trial with a ghost lap
 - [ ] Day/night cycle
 
 ## Licence
@@ -85,4 +123,4 @@ MIT — see [LICENSE](LICENSE).
 
 ## A note on originality
 
-This is original work. It is **not affiliated with, endorsed by, or derived from any commercial game or franchise**, and contains no third-party game assets — no imported models, textures, audio, maps or trade names. The city, the vehicles and the sound are all generated by the code in this repository.
+This is original work. It is **not affiliated with, endorsed by, or derived from any commercial game or franchise**, and contains no third-party game assets — no imported models, textures, audio, maps, characters or trade names. The city, the vehicles, the characters, the weapons and the sound are all generated by the code in this repository.

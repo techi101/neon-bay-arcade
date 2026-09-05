@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Neon Bay — open-world driving</title>
-<meta name="description" content="An original open-world driving game that runs in the browser. Procedural city, drift physics, police chases, delivery missions.">
+<title>Neon Bay — open-world action</title>
+<meta name="description" content="An original open-world action game in the browser. Drive, shoot, run a six-mission campaign. Procedural city, no downloads.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
 <style>
 :root{
-  --hot:#ff2d78; --cyan:#42e8ff; --amber:#ffb020; --lime:#2fe08a;
+  --hot:#ff2d78; --cyan:#42e8ff; --amber:#ffb020; --lime:#2fe08a; --red:#ff3a5e;
   --ink:#eaf2ff; --panel:rgba(10,12,30,.62); --edge:rgba(120,150,220,.28);
   --ui:"Chakra Petch",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
 }
@@ -21,81 +21,102 @@ html,body{height:100%;overflow:hidden;background:#07091c;color:var(--ink);font-f
 
 /* ---------------- intro ---------------- */
 #intro{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:22px;padding:24px;text-align:center;
+  align-items:center;justify-content:center;gap:20px;padding:24px;text-align:center;overflow-y:auto;
   background:radial-gradient(120% 90% at 50% 8%,#3a1550 0%,#160d33 42%,#07091c 100%)}
-#intro h1{font-size:clamp(44px,11vw,104px);font-weight:700;line-height:.92;letter-spacing:-.02em;
+#intro h1{font-size:clamp(42px,10vw,96px);font-weight:700;line-height:.92;letter-spacing:-.02em;
   background:linear-gradient(180deg,#fff 0%,#ffd6e8 34%,var(--hot) 74%,#7a1fd0 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 26px rgba(255,45,120,.5))}
-#intro .tag{font-family:var(--mono);font-size:12px;letter-spacing:.34em;text-transform:uppercase;
-  color:var(--cyan);opacity:.9}
-#intro .blurb{max-width:52ch;font-size:15.5px;line-height:1.6;color:#b9c6e6}
+#intro .tag{font-family:var(--mono);font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--cyan)}
+#intro .blurb{max-width:56ch;font-size:15.5px;line-height:1.62;color:#b9c6e6}
 #start{font-family:var(--ui);font-size:18px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-  padding:16px 46px;border:0;border-radius:10px;cursor:pointer;color:#12002a;
+  padding:16px 48px;border:0;border-radius:10px;cursor:pointer;color:#12002a;
   background:linear-gradient(135deg,var(--cyan),#69ffd0);
   box-shadow:0 0 34px rgba(66,232,255,.45);transition:transform .14s,box-shadow .14s}
 #start:hover{transform:translateY(-2px);box-shadow:0 0 48px rgba(66,232,255,.7)}
-.keys{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;max-width:640px;
-  font-family:var(--mono);font-size:11.5px;color:#8fa2cc}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:7px 16px;
+  max-width:660px;font-family:var(--mono);font-size:11px;color:#8fa2cc;text-align:left}
 .keys b{display:inline-block;background:rgba(255,255,255,.08);border:1px solid var(--edge);
-  border-radius:5px;padding:2px 7px;color:var(--ink);margin-right:5px}
-#intro .legal{font-size:11px;color:#6b7ba6;max-width:60ch;line-height:1.55}
-#intro .legal a{color:#8fa2cc}
+  border-radius:5px;padding:2px 7px;color:var(--ink);margin-right:6px;min-width:22px;text-align:center}
+#intro .legal{font-size:11px;color:#6b7ba6;max-width:64ch;line-height:1.55}
 
 /* ---------------- hud ---------------- */
 #hud{position:fixed;inset:0;z-index:20;pointer-events:none;display:none}
 .pane{position:absolute;background:var(--panel);border:1px solid var(--edge);
   border-radius:12px;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
-#topleft{top:14px;left:14px;padding:11px 15px;display:flex;flex-direction:column;gap:7px}
-.money{font-family:var(--mono);font-size:25px;font-weight:700;color:var(--lime);
+
+#topleft{top:14px;left:14px;padding:11px 15px;display:flex;flex-direction:column;gap:8px;min-width:196px}
+.money{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--lime);
   text-shadow:0 0 16px rgba(47,224,138,.5);font-variant-numeric:tabular-nums}
-.stars{font-size:19px;letter-spacing:3px;color:#59668c}
+.stars{font-size:18px;letter-spacing:3px;color:#59668c}
 .stars.hot{color:var(--hot);text-shadow:0 0 14px rgba(255,45,120,.75)}
-.row{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.16em;
-  text-transform:uppercase;color:#8fa2cc}
-.row span{font-family:var(--mono);color:var(--ink);font-size:13px;letter-spacing:0}
+.bars{display:flex;flex-direction:column;gap:5px;margin-top:2px}
+.bar{height:7px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;transition:width .18s}
+#hpbar{background:linear-gradient(90deg,var(--red),var(--lime))}
+#arbar{background:linear-gradient(90deg,#2b6fd0,var(--cyan))}
+.barlbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;
+  letter-spacing:.16em;color:#8fa2cc;text-transform:uppercase}
 
 #mini{position:absolute;top:14px;right:14px;width:190px;height:190px;border-radius:12px;
   background:rgba(8,10,26,.72);border:1px solid var(--edge);
   backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
 
-#botleft{bottom:16px;left:14px;padding:10px 18px 12px;text-align:center;min-width:132px}
-.spd{font-family:var(--mono);font-size:42px;font-weight:700;line-height:1;
+#botleft{bottom:16px;left:14px;padding:10px 18px 12px;text-align:center;min-width:126px}
+.spd{font-family:var(--mono);font-size:38px;font-weight:700;line-height:1;
   color:var(--cyan);text-shadow:0 0 18px rgba(66,232,255,.55);font-variant-numeric:tabular-nums}
-.spdl{font-size:10px;letter-spacing:.3em;color:#8fa2cc;margin-top:3px}
-.dmg{margin-top:9px;height:4px;width:100%;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
-#dmgbar{height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--hot));transition:width .25s}
+.spdl{font-size:9px;letter-spacing:.28em;color:#8fa2cc;margin-top:3px}
 
-#timer{position:absolute;top:14px;left:50%;transform:translateX(-50%);padding:9px 22px;
-  font-family:var(--mono);font-size:24px;font-weight:700;color:var(--amber);
-  text-shadow:0 0 16px rgba(255,176,32,.55);font-variant-numeric:tabular-nums}
-#timer.low{color:var(--hot);text-shadow:0 0 18px rgba(255,45,120,.8);animation:pulse .55s infinite}
-@keyframes pulse{50%{opacity:.45}}
+#botright{bottom:16px;right:14px;padding:10px 18px 12px;text-align:right;min-width:150px}
+.wep{font-size:17px;font-weight:700;letter-spacing:.04em}
+.amm{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--amber);
+  text-shadow:0 0 14px rgba(255,176,32,.45);font-variant-numeric:tabular-nums}
 
-#toast{position:absolute;bottom:118px;left:50%;transform:translateX(-50%);
-  padding:11px 26px;font-size:15px;font-weight:600;text-align:center;max-width:88vw;
+#objwrap{top:14px;left:50%;transform:translateX(-50%);padding:9px 20px;max-width:min(560px,84vw);
+  text-align:center;font-size:14.5px;font-weight:600}
+#objective{color:var(--amber)}
+
+#timer{position:absolute;top:64px;left:50%;transform:translateX(-50%);padding:7px 20px;
+  font-family:var(--mono);font-size:22px;font-weight:700;color:var(--amber);
+  text-shadow:0 0 16px rgba(255,176,32,.55);font-variant-numeric:tabular-nums;
   background:var(--panel);border:1px solid var(--edge);border-radius:10px;
-  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
-  opacity:0;transition:opacity .3s}
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+#timer.low{color:var(--hot);text-shadow:0 0 18px rgba(255,45,120,.8);animation:pulse .55s infinite}
+@keyframes pulse{50%{opacity:.42}}
 
-#hint{position:absolute;bottom:16px;right:14px;padding:8px 13px;font-family:var(--mono);
-  font-size:10.5px;color:#8fa2cc;line-height:1.7}
-#hint b{color:var(--ink)}
+#banner{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);
+  display:flex;flex-direction:column;gap:5px;align-items:center;text-align:center;
+  padding:14px 30px;max-width:min(620px,90vw);
+  background:var(--panel);border:1px solid var(--edge);border-radius:12px;
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+  opacity:0;transition:opacity .35s}
+#banner b{font-size:17px;letter-spacing:.06em;color:var(--cyan)}
+#banner span{font-size:14.5px;line-height:1.55;color:#c8d4ee}
+
+#cross{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;opacity:.8}
+#cross::before,#cross::after{content:"";position:absolute;background:rgba(255,255,255,.85)}
+#cross::before{left:10px;top:0;width:2px;height:8px;box-shadow:0 14px 0 rgba(255,255,255,.85)}
+#cross::after{top:10px;left:0;height:2px;width:8px;box-shadow:14px 0 0 rgba(255,255,255,.85)}
+
+#flash{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(120% 90% at 50% 50%,transparent 38%,rgba(255,30,70,.55) 100%)}
 
 /* ---------------- touch ---------------- */
 #touch{position:absolute;inset:0;pointer-events:none;display:none}
-.tbtn{position:absolute;pointer-events:auto;width:74px;height:74px;border-radius:50%;
+.tbtn{position:absolute;pointer-events:auto;width:70px;height:70px;border-radius:50%;
   background:rgba(14,18,44,.6);border:1.5px solid var(--edge);color:var(--ink);
-  font-family:var(--ui);font-size:12px;font-weight:700;letter-spacing:.06em;
+  font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:.05em;
   display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .tbtn:active{background:rgba(66,232,255,.28);border-color:var(--cyan)}
-#tL{left:18px;bottom:104px} #tR{left:106px;bottom:104px}
-#tGas{right:18px;bottom:104px;background:rgba(47,224,138,.2)}
-#tRev{right:106px;bottom:104px}
-#tHand{right:18px;bottom:196px;width:64px;height:64px;font-size:11px}
-@media (pointer:coarse){#touch{display:block} #hint{display:none} #mini{width:132px;height:132px}}
-@media (max-width:520px){#mini{width:118px;height:118px} .spd{font-size:32px}}
+#tL{left:16px;bottom:98px} #tR{left:98px;bottom:98px}
+#tGas{right:16px;bottom:98px;background:rgba(47,224,138,.2)}
+#tRev{right:98px;bottom:98px}
+#tFire{right:16px;bottom:182px;background:rgba(255,45,120,.24);border-color:var(--hot)}
+#tHand{right:98px;bottom:182px;width:60px;height:60px;font-size:10px}
+#tEnter{left:16px;bottom:182px;width:60px;height:60px;font-size:10px}
+@media (pointer:coarse){#touch{display:block} #cross{display:none} #mini{width:130px;height:130px}}
+@media (max-width:560px){#mini{width:116px;height:116px} .spd{font-size:28px} #botright{min-width:120px}}
 </style>
 </head>
 <body>
@@ -103,50 +124,62 @@ html,body{height:100%;overflow:hidden;background:#07091c;color:var(--ink);font-f
 <div id="stage"></div>
 
 <div id="intro">
-  <div class="tag">Original open-world driving</div>
+  <div class="tag">Original open-world action</div>
   <h1>NEON BAY</h1>
-  <p class="blurb">A sun-bleached grid city at dusk. Take a delivery, outrun the heat, find a ramp and get some air. Everything you see — the city, the cars, the sound — is generated in code the moment you press start.</p>
-  <button id="start" type="button">Start Driving</button>
+  <p class="blurb">A courier job for a dispatcher named Reyes turns into a war with the crew running the docks. Drive it, walk it, shoot your way through six missions — or ignore all of that and just tear up the city.</p>
+  <button id="start" type="button">Start Campaign</button>
   <div class="keys">
-    <span><b>W A S D</b> drive</span>
+    <span><b>W A S D</b> move / drive</span>
+    <span><b>Mouse</b> aim</span>
+    <span><b>Click</b> fire</span>
+    <span><b>F</b> enter / exit vehicle</span>
+    <span><b>Shift</b> sprint</span>
     <span><b>Space</b> handbrake</span>
-    <span><b>C</b> camera</span>
-    <span><b>R</b> respawn</span>
+    <span><b>1 2 3</b> / <b>Q</b> weapons</span>
+    <span><b>R</b> reload</span>
     <span><b>P</b> pause</span>
   </div>
-  <p class="legal">An original game. Not affiliated with, endorsed by, or derived from any commercial game franchise — all geometry, textures and audio are procedurally generated at runtime. MIT licensed.</p>
+  <p class="legal">An original game. Not affiliated with, endorsed by, or derived from any commercial game franchise — the city, vehicles, characters, weapons and audio are all generated in code at runtime. MIT licensed.</p>
 </div>
 
 <div id="hud">
   <div class="pane" id="topleft">
     <div class="money" id="cash">$0</div>
     <div class="stars" id="stars">☆☆☆☆☆</div>
-    <div class="row">Drops <span id="deliv">0</span></div>
+    <div class="bars">
+      <div class="barlbl"><span>Health</span><span>Armour</span></div>
+      <div class="bar"><i id="hpbar"></i></div>
+      <div class="bar"><i id="arbar" style="width:0"></i></div>
+    </div>
   </div>
 
   <canvas id="mini"></canvas>
 
+  <div class="pane" id="objwrap"><span id="objective"></span></div>
+  <div id="timer" style="display:none">0.0s</div>
+
   <div class="pane" id="botleft">
     <div class="spd" id="speed">0</div>
     <div class="spdl">KM/H</div>
-    <div class="dmg"><div id="dmgbar"></div></div>
   </div>
 
-  <div class="pane" id="timer" style="display:none">0.0s</div>
-  <div id="toast"></div>
-
-  <div class="pane" id="hint">
-    <b>Gold marker</b> — pick up<br>
-    <b>Green marker</b> — deliver<br>
-    <b>Stars</b> — police heat
+  <div class="pane" id="botright">
+    <div class="wep" id="weapon">Pistol</div>
+    <div class="amm" id="ammo">12 / 120</div>
   </div>
+
+  <div id="cross"></div>
+  <div id="banner"></div>
+  <div id="flash"></div>
 
   <div id="touch">
     <div class="tbtn" id="tL">◀</div>
     <div class="tbtn" id="tR">▶</div>
     <div class="tbtn" id="tRev">REV</div>
     <div class="tbtn" id="tGas">GAS</div>
-    <div class="tbtn" id="tHand">HAND</div>
+    <div class="tbtn" id="tFire">FIRE</div>
+    <div class="tbtn" id="tHand">RUN</div>
+    <div class="tbtn" id="tEnter">CAR</div>
   </div>
 </div>
 
