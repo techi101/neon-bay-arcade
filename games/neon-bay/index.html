@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Neon Bay — open-world driving</title>
+<meta name="description" content="An original open-world driving game that runs in the browser. Procedural city, drift physics, police chases, delivery missions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --hot:#ff2d78; --cyan:#42e8ff; --amber:#ffb020; --lime:#2fe08a;
+  --ink:#eaf2ff; --panel:rgba(10,12,30,.62); --edge:rgba(120,150,220,.28);
+  --ui:"Chakra Petch",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#07091c;color:var(--ink);font-family:var(--ui)}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block}
+
+/* ---------------- intro ---------------- */
+#intro{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:22px;padding:24px;text-align:center;
+  background:radial-gradient(120% 90% at 50% 8%,#3a1550 0%,#160d33 42%,#07091c 100%)}
+#intro h1{font-size:clamp(44px,11vw,104px);font-weight:700;line-height:.92;letter-spacing:-.02em;
+  background:linear-gradient(180deg,#fff 0%,#ffd6e8 34%,var(--hot) 74%,#7a1fd0 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 26px rgba(255,45,120,.5))}
+#intro .tag{font-family:var(--mono);font-size:12px;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--cyan);opacity:.9}
+#intro .blurb{max-width:52ch;font-size:15.5px;line-height:1.6;color:#b9c6e6}
+#start{font-family:var(--ui);font-size:18px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  padding:16px 46px;border:0;border-radius:10px;cursor:pointer;color:#12002a;
+  background:linear-gradient(135deg,var(--cyan),#69ffd0);
+  box-shadow:0 0 34px rgba(66,232,255,.45);transition:transform .14s,box-shadow .14s}
+#start:hover{transform:translateY(-2px);box-shadow:0 0 48px rgba(66,232,255,.7)}
+.keys{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;max-width:640px;
+  font-family:var(--mono);font-size:11.5px;color:#8fa2cc}
+.keys b{display:inline-block;background:rgba(255,255,255,.08);border:1px solid var(--edge);
+  border-radius:5px;padding:2px 7px;color:var(--ink);margin-right:5px}
+#intro .legal{font-size:11px;color:#6b7ba6;max-width:60ch;line-height:1.55}
+#intro .legal a{color:#8fa2cc}
+
+/* ---------------- hud ---------------- */
+#hud{position:fixed;inset:0;z-index:20;pointer-events:none;display:none}
+.pane{position:absolute;background:var(--panel);border:1px solid var(--edge);
+  border-radius:12px;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+#topleft{top:14px;left:14px;padding:11px 15px;display:flex;flex-direction:column;gap:7px}
+.money{font-family:var(--mono);font-size:25px;font-weight:700;color:var(--lime);
+  text-shadow:0 0 16px rgba(47,224,138,.5);font-variant-numeric:tabular-nums}
+.stars{font-size:19px;letter-spacing:3px;color:#59668c}
+.stars.hot{color:var(--hot);text-shadow:0 0 14px rgba(255,45,120,.75)}
+.row{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:#8fa2cc}
+.row span{font-family:var(--mono);color:var(--ink);font-size:13px;letter-spacing:0}
+
+#mini{position:absolute;top:14px;right:14px;width:190px;height:190px;border-radius:12px;
+  background:rgba(8,10,26,.72);border:1px solid var(--edge);
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+
+#botleft{bottom:16px;left:14px;padding:10px 18px 12px;text-align:center;min-width:132px}
+.spd{font-family:var(--mono);font-size:42px;font-weight:700;line-height:1;
+  color:var(--cyan);text-shadow:0 0 18px rgba(66,232,255,.55);font-variant-numeric:tabular-nums}
+.spdl{font-size:10px;letter-spacing:.3em;color:#8fa2cc;margin-top:3px}
+.dmg{margin-top:9px;height:4px;width:100%;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+#dmgbar{height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--hot));transition:width .25s}
+
+#timer{position:absolute;top:14px;left:50%;transform:translateX(-50%);padding:9px 22px;
+  font-family:var(--mono);font-size:24px;font-weight:700;color:var(--amber);
+  text-shadow:0 0 16px rgba(255,176,32,.55);font-variant-numeric:tabular-nums}
+#timer.low{color:var(--hot);text-shadow:0 0 18px rgba(255,45,120,.8);animation:pulse .55s infinite}
+@keyframes pulse{50%{opacity:.45}}
+
+#toast{position:absolute;bottom:118px;left:50%;transform:translateX(-50%);
+  padding:11px 26px;font-size:15px;font-weight:600;text-align:center;max-width:88vw;
+  background:var(--panel);border:1px solid var(--edge);border-radius:10px;
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+  opacity:0;transition:opacity .3s}
+
+#hint{position:absolute;bottom:16px;right:14px;padding:8px 13px;font-family:var(--mono);
+  font-size:10.5px;color:#8fa2cc;line-height:1.7}
+#hint b{color:var(--ink)}
+
+/* ---------------- touch ---------------- */
+#touch{position:absolute;inset:0;pointer-events:none;display:none}
+.tbtn{position:absolute;pointer-events:auto;width:74px;height:74px;border-radius:50%;
+  background:rgba(14,18,44,.6);border:1.5px solid var(--edge);color:var(--ink);
+  font-family:var(--ui);font-size:12px;font-weight:700;letter-spacing:.06em;
+  display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.tbtn:active{background:rgba(66,232,255,.28);border-color:var(--cyan)}
+#tL{left:18px;bottom:104px} #tR{left:106px;bottom:104px}
+#tGas{right:18px;bottom:104px;background:rgba(47,224,138,.2)}
+#tRev{right:106px;bottom:104px}
+#tHand{right:18px;bottom:196px;width:64px;height:64px;font-size:11px}
+@media (pointer:coarse){#touch{display:block} #hint{display:none} #mini{width:132px;height:132px}}
+@media (max-width:520px){#mini{width:118px;height:118px} .spd{font-size:32px}}
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+
+<div id="intro">
+  <div class="tag">Original open-world driving</div>
+  <h1>NEON BAY</h1>
+  <p class="blurb">A sun-bleached grid city at dusk. Take a delivery, outrun the heat, find a ramp and get some air. Everything you see — the city, the cars, the sound — is generated in code the moment you press start.</p>
+  <button id="start" type="button">Start Driving</button>
+  <div class="keys">
+    <span><b>W A S D</b> drive</span>
+    <span><b>Space</b> handbrake</span>
+    <span><b>C</b> camera</span>
+    <span><b>R</b> respawn</span>
+    <span><b>P</b> pause</span>
+  </div>
+  <p class="legal">An original game. Not affiliated with, endorsed by, or derived from any commercial game franchise — all geometry, textures and audio are procedurally generated at runtime. MIT licensed.</p>
+</div>
+
+<div id="hud">
+  <div class="pane" id="topleft">
+    <div class="money" id="cash">$0</div>
+    <div class="stars" id="stars">☆☆☆☆☆</div>
+    <div class="row">Drops <span id="deliv">0</span></div>
+  </div>
+
+  <canvas id="mini"></canvas>
+
+  <div class="pane" id="botleft">
+    <div class="spd" id="speed">0</div>
+    <div class="spdl">KM/H</div>
+    <div class="dmg"><div id="dmgbar"></div></div>
+  </div>
+
+  <div class="pane" id="timer" style="display:none">0.0s</div>
+  <div id="toast"></div>
+
+  <div class="pane" id="hint">
+    <b>Gold marker</b> — pick up<br>
+    <b>Green marker</b> — deliver<br>
+    <b>Stars</b> — police heat
+  </div>
+
+  <div id="touch">
+    <div class="tbtn" id="tL">◀</div>
+    <div class="tbtn" id="tR">▶</div>
+    <div class="tbtn" id="tRev">REV</div>
+    <div class="tbtn" id="tGas">GAS</div>
+    <div class="tbtn" id="tHand">HAND</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

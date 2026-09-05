@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Bay Arcade</title>
+<meta name="description" content="Original browser games that run with no install, no plugins and no downloads. Open source, MIT licensed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --bg:#07091c; --bg2:#0d1030; --panel:rgba(16,20,50,.55);
+  --ink:#eaf2ff; --ink2:#a9b8dd; --dim:#6b7ba6;
+  --hot:#ff2d78; --cyan:#42e8ff; --lime:#2fe08a; --amber:#ffb020;
+  --edge:rgba(120,150,220,.24);
+  --ui:"Chakra Petch",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);line-height:1.6;
+  -webkit-font-smoothing:antialiased;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;z-index:-2;
+  background:radial-gradient(110% 70% at 50% 0%,#3a1550 0%,#160d33 40%,#07091c 78%)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px)}
+.wrap{max-width:1000px;margin:0 auto;padding:52px 22px 72px}
+
+header{text-align:center;margin-bottom:14px}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.36em;text-transform:uppercase;color:var(--cyan)}
+h1{font-size:clamp(40px,10vw,86px);font-weight:700;line-height:.94;letter-spacing:-.025em;margin:12px 0 0;
+  background:linear-gradient(180deg,#fff 0%,#ffd6e8 32%,var(--hot) 72%,#7a1fd0 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 30px rgba(255,45,120,.42))}
+.lede{max-width:58ch;margin:16px auto 0;color:var(--ink2);font-size:16.5px}
+.rule{height:1px;margin:38px 0 30px;background:linear-gradient(90deg,transparent,var(--edge) 18%,var(--edge) 82%,transparent)}
+
+.sect{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:16px}
+
+.games{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.card{position:relative;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--panel);border:1px solid var(--edge);border-radius:16px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  transition:transform .2s,border-color .2s,box-shadow .2s}
+.card.live:hover{transform:translateY(-4px);border-color:var(--cyan);
+  box-shadow:0 18px 44px -22px rgba(66,232,255,.6)}
+.art{height:172px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#1b0f3c 0%,#4a1553 46%,#c04a6a 78%,#ffb06a 100%)}
+.art .sun{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);
+  width:112px;height:112px;border-radius:50%;
+  background:linear-gradient(180deg,#fff2c4,#ff5f9e 62%,#7a1fd0);
+  box-shadow:0 0 54px rgba(255,110,160,.6)}
+.art .grid{position:absolute;left:-30%;right:-30%;bottom:0;height:52%;
+  background:
+    repeating-linear-gradient(90deg,rgba(66,232,255,.42) 0 1px,transparent 1px 42px),
+    repeating-linear-gradient(0deg,rgba(66,232,255,.32) 0 1px,transparent 1px 22px);
+  transform:perspective(180px) rotateX(64deg);transform-origin:bottom}
+.art .sky{position:absolute;inset:0;
+  background:radial-gradient(70% 46% at 50% 74%,rgba(255,45,120,.34),transparent 70%)}
+.art .bld{position:absolute;bottom:46%;width:100%;height:34%;
+  background:
+    linear-gradient(90deg,transparent 0 6%,#140b2e 6% 13%,transparent 13% 19%,#0f0824 19% 24%,
+    transparent 24% 33%,#180d36 33% 42%,transparent 42% 49%,#0d0720 49% 55%,
+    transparent 55% 64%,#160c32 64% 71%,transparent 71% 79%,#110927 79% 86%,transparent 86%)}
+.body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:9px;flex:1}
+.body h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.body p{color:var(--ink2);font-size:14.5px;flex:1}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:3px 8px;border-radius:5px;
+  background:rgba(255,255,255,.06);border:1px solid var(--edge);color:var(--ink2)}
+.play{margin-top:10px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 20px;border-radius:9px;text-decoration:none;font-weight:700;font-size:14px;
+  letter-spacing:.1em;text-transform:uppercase;color:#0a0020;
+  background:linear-gradient(135deg,var(--cyan),#69ffd0);transition:filter .16s}
+.play:hover{filter:brightness(1.1)}
+.card.soon{opacity:.62}
+.card.soon .play{background:rgba(255,255,255,.08);color:var(--dim);cursor:default;pointer-events:none}
+.badge{position:absolute;top:12px;right:12px;z-index:2;font-family:var(--mono);font-size:10px;
+  letter-spacing:.12em;padding:4px 10px;border-radius:20px;
+  background:rgba(7,9,28,.8);border:1px solid var(--edge);color:var(--lime)}
+.card.soon .badge{color:var(--amber)}
+
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:12px}
+.note{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:16px 18px}
+.note h3{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--cyan);margin-bottom:7px}
+.note p{font-size:14px;color:var(--ink2)}
+.note code{font-family:var(--mono);font-size:12.5px;color:var(--ink);
+  background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px}
+
+footer{margin-top:46px;padding-top:22px;border-top:1px solid var(--edge);
+  color:var(--dim);font-size:13.5px;max-width:70ch}
+footer a{color:var(--ink2)}
+footer strong{color:var(--ink2)}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="tag">Browser games · no install · open source</div>
+    <h1>NEON BAY ARCADE</h1>
+    <p class="lede">Original games that run straight in a browser tab. No downloads, no plugins, no accounts. Every world, texture and sound is generated in code at load time.</p>
+  </header>
+
+  <div class="rule"></div>
+
+  <p class="sect">Now playing</p>
+  <div class="games">
+
+    <article class="card live">
+      <span class="badge">PLAYABLE</span>
+      <div class="art">
+        <div class="sky"></div>
+        <div class="sun"></div>
+        <div class="bld"></div>
+        <div class="grid"></div>
+      </div>
+      <div class="body">
+        <h2>Neon Bay</h2>
+        <p>An open-world driving game in a procedurally generated grid city at dusk. Run deliveries against the clock, build a police wanted level, drift through intersections and launch off ramps.</p>
+        <div class="meta">
+          <span class="chip">3D · WebGL</span>
+          <span class="chip">Open world</span>
+          <span class="chip">Drift physics</span>
+          <span class="chip">Keyboard + touch</span>
+        </div>
+        <a class="play" href="games/neon-bay/">Play now</a>
+      </div>
+    </article>
+
+    <article class="card soon">
+      <span class="badge">IN PROGRESS</span>
+      <div class="art" style="background:linear-gradient(180deg,#0f1b3c 0%,#153a5c 48%,#2f7f8c 78%,#7fe8d0 100%)">
+        <div class="sky"></div>
+        <div class="bld"></div>
+        <div class="grid" style="background:
+          repeating-linear-gradient(90deg,rgba(127,232,208,.38) 0 1px,transparent 1px 38px),
+          repeating-linear-gradient(0deg,rgba(127,232,208,.28) 0 1px,transparent 1px 20px)"></div>
+      </div>
+      <div class="body">
+        <h2>Street Sprint</h2>
+        <p>A top-down checkpoint time trial on the same street grid. One car, one clock, a ghost of your best lap chasing you around the block.</p>
+        <div class="meta">
+          <span class="chip">2D · Canvas</span>
+          <span class="chip">Time trial</span>
+          <span class="chip">Ghost replay</span>
+        </div>
+        <span class="play">Coming soon</span>
+      </div>
+    </article>
+
+  </div>
+
+  <div class="rule"></div>
+
+  <p class="sect">How it works</p>
+  <div class="notes">
+    <div class="note">
+      <h3>Nothing to download</h3>
+      <p>The city is built at runtime from a seeded grid — buildings, palms, neon and ramps are all placed in code. There are no model or texture files in this repo.</p>
+    </div>
+    <div class="note">
+      <h3>Sound from an oscillator</h3>
+      <p>Engine note, siren and impacts are synthesized live with the Web Audio API. Engine pitch tracks your actual wheel speed.</p>
+    </div>
+    <div class="note">
+      <h3>Run it locally</h3>
+      <p>Clone the repo and serve the folder: <code>npx serve .</code> then open the printed address. That is the whole setup.</p>
+    </div>
+  </div>
+
+  <footer>
+    <strong>Neon Bay Arcade</strong> is original work, released under the MIT licence. It is not affiliated with, endorsed by, or derived from any commercial game or franchise, and contains no third-party game assets of any kind.
+  </footer>
+
+</div>
+</body>
+</html>
